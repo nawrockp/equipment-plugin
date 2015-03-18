@@ -2,25 +2,47 @@
 
 /*
 Plugin Name: Equipment Post Type
-Description: functions for the custom post type 'equipment' for a Genesis site.  Templates are part of the theme
-Version: 1.0
+Description: functions for the custom post type 'equipment' for a Genesis site.  Templates are part of the theme so no layout is done here
+Version: 1.1
 Author: Ken Nawrocki
 
 */
+/*
+flush re-write rules only on activation and deactivation of plugin
+*/
+function activate() {
+		my_custom_post_equipment();
+		taxonomies_equipment();
+		equipment_flush_rewrite_rules();
+}
+function equipment_flush_rewrite_rules() {
+		flush_rewrite_rules();
+}
+
+register_activation_hook(__FILE__, 'activate');
+register_deactivation_hook( __FILE__, 'flush_rewrite_rules' );
 
 /*
 * Define custom post type 'equipment'
 */
-
 function my_custom_post_equipment() {
 		$labels = array('name' => _x('Equipment', 'post type general name'), 'singular_name' => _x('Piece of Equipment', 'post type singular name'), 'add_new' => _x('Add New', 'Equipment'), 'add_new_item' => __('Add New Equipment'), 'edit_item' => __('Edit Equipment'), 'new_item' => __('New Equipment'), 'all_items' => __('All Equipment'), 'view_item' => __('View Equipment'), 'search_items' => __('Search Equipment'), 'not_found' => __('No equipment found'), 'not_found_in_trash' => __('No equipment found in the Trash'), 'parent_item_colon' => '', 'menu_name' => 'Equipment');
-		$args = array('labels' => $labels, 'description' => 'Holds our equipment and equipment specific data', 'rewrite' => array('slug' => 'equipment', 'with_front' => false), 'public' => true, 'menu_position' => 5, 'supports' => array('title', 'editor', 'thumbnail', 'excerpt', 'comments'), 'has_archive' => true,);
+		$args = array('labels' => $labels, 'description' => 'Holds our equipment and equipment specific data', 'rewrite' => array('slug' => 'equipment', 'with_front' => false), 'public' => true, 'menu_position' => 5, 'supports' => array('title', 'editor', 'thumbnail', 'excerpt', 'comments'), 'has_archive' => true, 'taxonomies' => array('equipment_category'));
 		register_post_type('equipment', $args);
-		flush_rewrite_rules(false);
 }
 
 add_action('init', 'my_custom_post_equipment');
 
+/*
+* Define taxonomies for custom post type 'equipment'
+*/
+function taxonomies_equipment() {
+		$labels = array('name' => _x('Equipment Categories', 'taxonomy general name'), 'singular_name' => _x('Equipment Category', 'taxonomy singular name'), 'search_items' => __('Search Equipment Categories'), 'all_items' => __('All Equipment Categories'), 'parent_item' => __('Parent Equipment Category'), 'parent_item_colon' => __('Parent Equipment Category:'), 'edit_item' => __('Edit Equipment Category'), 'update_item' => __('Update Equipment Category'), 'add_new_item' => __('Add New Equipment Category'), 'new_item_name' => __('New Equipment Category'), 'menu_name' => __('Equipment Categories'),);
+		$args = array('labels' => $labels, 'hierarchical' => true,);
+		register_taxonomy('equipment_category', 'equipment', $args);
+}
+
+add_action('init', 'taxonomies_equipment');
 /*
 * define custom messages for post type 'equipment'
 */
@@ -51,17 +73,6 @@ function my_contextual_help($contextual_help, $screen_id, $screen) {
 add_action('contextual_help', 'my_contextual_help', 10, 3);
 
 /*
-* Define taxonomies for custom post type 'equipment'
-*/
-function taxonomies_equipment() {
-		$labels = array('name' => _x('Equipment Categories', 'taxonomy general name'), 'singular_name' => _x('Equipment Category', 'taxonomy singular name'), 'search_items' => __('Search Equipment Categories'), 'all_items' => __('All Equipment Categories'), 'parent_item' => __('Parent Equipment Category'), 'parent_item_colon' => __('Parent Equipment Category:'), 'edit_item' => __('Edit Equipment Category'), 'update_item' => __('Update Equipment Category'), 'add_new_item' => __('Add New Equipment Category'), 'new_item_name' => __('New Equipment Category'), 'menu_name' => __('Equipment Categories'),);
-		$args = array('labels' => $labels, 'hierarchical' => true,);
-		register_taxonomy('equipment_category', 'equipment', $args);
-}
-
-add_action('init', 'taxonomies_equipment', 0);
-
-/*
 * Add meta box for post type 'equipment'
 */
 add_action('admin_init', 'my_equipment_metabox');
@@ -72,13 +83,13 @@ function my_equipment_metabox() {
 
 function display_equipment_details_meta_box($equipment) {
 // Retrieve meta box details based on equipment ID
-		$equipment_price    = esc_html(get_post_meta($equipment->ID, 'Price', true));
-		$equipment_make     = esc_html(get_post_meta($equipment->ID, 'Make', true));
-		$equipment_refID    = esc_html(get_post_meta($equipment->ID, 'ID', true));
-		$equipment_year     = esc_html(get_post_meta($equipment->ID, 'Year', true));
-		$equipment_model    = esc_html(get_post_meta($equipment->ID, 'Model', true));
+		$equipment_price = esc_html(get_post_meta($equipment->ID, 'Price', true));
+		$equipment_make = esc_html(get_post_meta($equipment->ID, 'Make', true));
+		$equipment_refID = esc_html(get_post_meta($equipment->ID, 'ID', true));
+		$equipment_year = esc_html(get_post_meta($equipment->ID, 'Year', true));
+		$equipment_model = esc_html(get_post_meta($equipment->ID, 'Model', true));
 		$equipment_capacity = esc_html(get_post_meta($equipment->ID, 'Capacity', true));
-		$equipment_new      = esc_html(get_post_meta($equipment->ID, 'New', true));
+		$equipment_new = esc_html(get_post_meta($equipment->ID, 'New', true));
 		?>
 
         <table>
@@ -119,7 +130,7 @@ function display_equipment_details_meta_box($equipment) {
               </span></td>
           </tr>
          </table>
-<?php   }   ?>
+<?php }?>
 <?php
 register_nav_menu('equipment', 'Equipment');
 
@@ -129,26 +140,26 @@ register_nav_menu('equipment', 'Equipment');
 add_action('save_post', 'add_equipment_details_fields', 10, 2);
 
 function add_equipment_details_fields($equipment_id, $equipment) {
-        // Check post type for equipment
+// Check post type for equipment
 		if ($equipment->post_type == 'equipment') {
-                // Store data in post meta table if present in post data
+// Store data in post meta table if present in post data
 				if (isset ($_POST['equipment_refID']) && $_POST['equipment_refID'] != '') {
-						update_post_meta($equipment_id, 'ID', $_POST['equipment_refID']);
+						update_post_meta($equipment_id, 'ID', sanitize_text_field( $_POST['equipment_refID']));
 				}
 				if (isset ($_POST['equipment_price']) && $_POST['equipment_price'] != '') {
-						update_post_meta($equipment_id, 'Price', $_POST['equipment_price']);
+						update_post_meta($equipment_id, 'Price', sanitize_text_field( $_POST['equipment_price']));
 				}
 				if (isset ($_POST['equipment_year']) && $_POST['equipment_year'] != '') {
-						update_post_meta($equipment_id, 'Year', $_POST['equipment_year']);
+						update_post_meta($equipment_id, 'Year', sanitize_text_field( $_POST['equipment_year']));
 				}
 				if (isset ($_POST['equipment_make']) && $_POST['equipment_make'] != '') {
-						update_post_meta($equipment_id, 'Make', $_POST['equipment_make']);
+						update_post_meta($equipment_id, 'Make', sanitize_text_field( $_POST['equipment_make']));
 				}
 				if (isset ($_POST['equipment_model']) && $_POST['equipment_model'] != '') {
-						update_post_meta($equipment_id, 'Model', $_POST['equipment_model']);
+						update_post_meta($equipment_id, 'Model', sanitize_text_field( $_POST['equipment_model']));
 				}
 				if (isset ($_POST['equipment_capacity']) && $_POST['equipment_capacity'] != '') {
-						update_post_meta($equipment_id, 'Capacity', $_POST['equipment_capacity']);
+						update_post_meta($equipment_id, 'Capacity', sanitize_text_field( $_POST['equipment_capacity']));
 				}
 		}
 }
@@ -158,17 +169,17 @@ function add_equipment_details_fields($equipment_id, $equipment) {
 */
 function equipment_singlepost() {
 		while (have_posts()) : the_post();
-    		$custom             = get_post_custom();
-    		$equipment_price    = esc_html($custom['Price'][0]);
-    		$equipment_make     = esc_html($custom['Make'][0]);
-    		$equipment_refID    = esc_html($custom['ID'][0]);
-    		$equipment_year     = esc_html($custom['Year'][0]);
-    		$equipment_model    = esc_html($custom['Model'][0]);
-    		$equipment_capacity = esc_html($custom['Capacity'][0]);
-    		$content            = get_the_content();
-    		$clean_content      = strip_shortcodes($content);
-    		$shortcode          = str_replace($clean_content, "", $content);
-            ?>
+		$custom = get_post_custom();
+		$equipment_price = esc_html($custom['Price'][0]);
+		$equipment_make = esc_html($custom['Make'][0]);
+		$equipment_refID = esc_html($custom['ID'][0]);
+		$equipment_year = esc_html($custom['Year'][0]);
+		$equipment_model = esc_html($custom['Model'][0]);
+		$equipment_capacity = esc_html($custom['Capacity'][0]);
+		$content = get_the_content();
+		$clean_content = strip_shortcodes($content);
+		$shortcode = str_replace($clean_content, "", $content);
+		?>
             <div id="post-<?php the_ID();?>" <?php post_class();?>> <?php echo do_shortcode($shortcode);?>
               <div class="entry-content" id="equipment_content">
                 <h4>
@@ -179,44 +190,48 @@ function equipment_singlepost() {
             </div><!--end #post -->
         <?php endwhile;?>
 
-<?php 	}
+		<?php
+}
+
 // Lists out equipment types
 function list_equipment_types() {
-		$taxonomy        = 'equipment_category';
-		$orderby         = 'name';
-		$show_count      = 0; 		// 1 for yes, 0 for no
-		$pad_counts      = 0; 		// 1 for yes, 0 for no
-		$hierarchical    = 1; 		// 1 for yes, 0 for no
-		$title           = '';
-		$args            = array('taxonomy' => $taxonomy, 'orderby' => $orderby, 'show_count' => $show_count, 'pad_counts' => $pad_counts, 'hierarchical' => $hierarchical, 'title_li' => $title);
-?>
+		$taxonomy = 'equipment_category';
+		$orderby = 'name';
+		$show_count = 0; // 1 for yes, 0 for no
+		$pad_counts = 0; // 1 for yes, 0 for no
+		$hierarchical = 1; // 1 for yes, 0 for no
+		$title = '';
+		$args = array('taxonomy' => $taxonomy, 'orderby' => $orderby, 'show_count' => $show_count, 'pad_counts' => $pad_counts, 'hierarchical' => $hierarchical, 'title_li' => $title);
+		?>
         <div id="post-<?php the_ID();?>" <?php post_class();?> >
           <div class="entry-content">
-    		<?php
-    		$terms = get_terms($taxonomy, $args);
-    		$count = count($terms);
-    		$i = 0;
-    		if ($count > 0) {
-    				$cape_list = '<p class="equipment_category-archive">';
-    				foreach ($terms as $term) {
-    						$i++;
-    						echo '<div class="equipment_category">';
-    						echo '<div class="equipment-category-title"><a href="' . site_url() . '/' . $taxonomy . '/' . $term->slug . '" title="' . sprintf(__('View all post filed under %s', 'my_localization_domain'), $term->name) . '">' . $term->name . '</a></div>';
-    						if (function_exists('s8_taxonomy_image')) {
-    								echo '<div class="taxonomy-term-image-container">';
-    								s8_taxonomy_image($term, 'thumbnail');
-    								echo '</div>';
+    				<?php
+    				$terms = get_terms($taxonomy, $args);
+    				$count = count($terms);
+    				$i = 0;
+    				if ($count > 0) {
+    						$cape_list = '<p class="equipment_category-archive">';
+    						foreach ($terms as $term) {
+    								$i++;
+    								echo '<div class="equipment_category">';
+    								echo '<div class="equipment-category-title"><a href="' . site_url() . '/' . $taxonomy . '/' . $term->slug . '" title="' . sprintf(__('View all post filed under %s', 'my_localization_domain'), $term->name) . '">' . $term->name . '</a></div>';
+    								if (function_exists('s8_taxonomy_image')) {
+    										echo '<div class="taxonomy-term-image-container">';
+    										s8_taxonomy_image($term, 'thumbnail');
+    										echo '</div>';
+    								}
+    								echo "<p class='equipment_category_description'>$term->description</p>";
+    								echo '<div class="clear"></div></div>';
     						}
-    						echo "<p class='equipment_category_description'>$term->description</p>";
-    						echo '<div class="clear"></div></div>';
     				}
-    		}
-    		?>
+    				?>
           </div>
           <!-- end .entry-content -->
         </div>
         <!--end  #post -->
-<?php }
+		<?php
+}
+
 function showroom_archive_loop() {
 		while (have_posts()) : the_post();
 		$custom = get_post_custom();
@@ -227,7 +242,8 @@ function showroom_archive_loop() {
 		$equipment_model = esc_html($custom['Model'][0]);
 		$equipment_capacity = esc_html($custom['Capacity'][0]);
 		echo '<div class="equipment_box">';
-		if (has_post_thumbnail()) {   	?>
+		if (has_post_thumbnail()) {
+				?>
                 <div class="equipment_thumb_wrapper"><div class="equipment_thumb"> <a href="<?php the_permalink();?>" title="<?php the_title_attribute();?>" >
                   <?php the_post_thumbnail('medium');?>
                   </a></div></div>
@@ -246,11 +262,11 @@ function equipment_search_form() {
 		$button_text = apply_filters('genesis_search_button_text', esc_attr__('Search', 'genesis'));
 		$onfocus = " onfocus=\"if (this.value == '$search_text') {this.value = '';}\"";
 		$onblur = " onblur=\"if (this.value == '') {this.value = '$search_text';}\"";
-        //* Don't apply JS events to user input
+//* Don't apply JS events to user input
 		if (is_search())
 				$onfocus = $onblur = '';
 
-        /** Empty label, by default. Filterable. */
+/** Empty label, by default. Filterable. */
 		$label = apply_filters('genesis_search_form_label', '');
 		$form = '
 		<form method="get" class="searchform search-form" action="' . home_url() . '/" >
@@ -262,11 +278,15 @@ function equipment_search_form() {
         ';
 		echo $form;
 }
+
 /*
-* Add stylesheet
+* Add stylesheet only for pages that use it
 */
+function add_equipment_styles() {
+		if (is_singular('equipment') || is_tax('equipment_category')) {
+				wp_enqueue_style('equipment', plugins_url('equipment') . '/equipment.css');
+		}
+}
 
-wp_enqueue_style('equipment', plugins_url('equipment') . '/equipment.css');
-
-
+add_action('wp_enqueue_scripts', 'add_equipment_styles');
 ?>
